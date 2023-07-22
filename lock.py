@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 import time
-import pyautogui
 import os
 import winsound
 
@@ -9,7 +8,6 @@ import winsound
 cap = cv2.VideoCapture(0)
 
 # Hareket tespiti için arka plan modeli
-fgbg = cv2.createBackgroundSubtractorMOG2()
 fgbg = cv2.createBackgroundSubtractorMOG2(history=500, varThreshold=100)
 
 # Hareket olup olmadığını takip etmek için
@@ -26,8 +24,8 @@ frequency = 1000  # Hz
 duration = 1000  # ms
 
 while True:
-    # Kameradan video akışı alma
-    ret, frame = cap.read()
+    # Kameradan video akışı alma, ancak görüntüyü işlemeyeceğiz
+    _, frame = cap.read()
 
     # Görüntüyü gri tonlamalı hale getirme ve arka plan modeli üzerinden geçirme
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -44,7 +42,7 @@ while True:
         no_motion_elapsed_time = 0
     else:
         no_motion_elapsed_time += 1
-        
+
         # Hareket algılanmadığı ilk 3 saniye içinde
         if no_motion_elapsed_time <= 3*25:
             # 1000 Hz frekansında bir saniye boyunca ton çal
@@ -55,11 +53,10 @@ while True:
             os.system("lock.bat")
             motion_detected = False
             no_motion_elapsed_time = 0
-            
-    # Görüntüyü ekranda gösterme
-    cv2.imshow('frame', fgmask)
 
-    # Q tuşuna basılırsa çıkış yapma
+    # Herhangi bir görüntü işleme olmadan arka planda çalışıyoruz, ekrana göstermiyoruz
+
+    # 'q' tuşuna basılırsa çıkış yapma
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
