@@ -10,18 +10,21 @@ cap = cv2.VideoCapture(0)
 # Hareket tespiti için arka plan modeli
 fgbg = cv2.createBackgroundSubtractorMOG2(history=500, varThreshold=100)
 
-# Hareket olup olmadığını takip etmek için
-motion_detected = False
+# Hareket algılanmadan kilitlenmesi gereken süre (saniye cinsinden)
+no_motion_lock_time = 5
 
 # Hareket algılanmadan geçen süre (saniye cinsinden)
 no_motion_elapsed_time = 0
 
-# Hareket algılanmadan kilitlenmesi gereken süre (saniye cinsinden)
-no_motion_lock_time = 5
-
 # tonun frekansı ve süresi
 frequency = 1000  # Hz
 duration = 1000  # ms
+
+# Bayrak, hareket algılandığını gösterir
+motion_detected = False
+
+# Bayrak, sesli uyarının yapıldığını gösterir
+alerted = False
 
 while True:
     # Kameradan video akışı alma, ancak görüntüyü işlemeyeceğiz
@@ -39,20 +42,28 @@ while True:
     # Hareket algılandıysa
     if num_contours > 0:
         motion_detected = True
+        # Hareket algılandığında burada ses çalmamıza gerek yok
+        # Çünkü hareket algılandığında zaten önceki uyarıyı yapmış oluyoruz
         no_motion_elapsed_time = 0
+        # Eğer daha önce uyarı yapılmadıysa ve kilitlenme durumunda değilse
+        if not alerted and no_motion_elapsed_time <= no_motion_lock_time*25:
+            # 1000 Hz frekansında bir saniye boyunca ton çal
+            winsound.Beep(frequency, duration)
+            alerted = True
     else:
         no_motion_elapsed_time += 1
 
-        # Hareket algılanmadığı ilk 3 saniye içinde
-        if no_motion_elapsed_time <= 3*25:
-            # 1000 Hz frekansında bir saniye boyunca ton çal
-            winsound.Beep(frequency, duration)
-
         # Hareket algılanmadan geçen süre kilitlenmesi gereken süreyi aşıyorsa
-        if no_motion_elapsed_time > no_motion_lock_time:
+        if no_motion_elapsed_time > no_motion_lock_time*25:
+            if not alerted:
+                # Kilitlenme durumunda bir kez daha bip sesi çal
+                winsound.Beep(frequency, duration)
+                alerted = True
             os.system("lock.bat")
             motion_detected = False
             no_motion_elapsed_time = 0
+            # Uyarı yapıldıktan sonra bayrağı sıfırla
+            alerted = False
 
     # Herhangi bir görüntü işleme olmadan arka planda çalışıyoruz, ekrana göstermiyoruz
 
